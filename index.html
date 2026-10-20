@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Taskdo — Todo List</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --text: #1a202c;
+    --text-muted: #8a94a6;
+    --accent: #4f6ef7;
+    --accent-soft: #eef1fe;
+    --danger: #ef4444;
+    --border: #e5e9f2;
+    --shadow: 0 8px 30px rgba(26, 32, 44, .08);
+    --radius: 14px;
+    --done: #16a34a;
+  }
+  [data-theme="dark"] {
+    --bg: #0f1220;
+    --surface: #1a1f33;
+    --text: #eef1f8;
+    --text-muted: #7c869e;
+    --accent: #6c86ff;
+    --accent-soft: #232a45;
+    --border: #2a3150;
+    --shadow: 0 8px 30px rgba(0, 0, 0, .35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px;
+    transition: background .3s, color .3s;
+  }
+  .app {
+    width: 100%;
+    max-width: 560px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 26px 26px 18px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.02em; }
+  .date { color: var(--text-muted); font-size: .85rem; margin-top: 4px; }
+  .icon-btn {
+    background: var(--accent-soft);
+    border: none;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: transform .15s;
+  }
+  .icon-btn:hover { transform: scale(1.08); }
+
+  .progress-wrap { padding: 0 26px 18px; }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: .78rem;
+    color: var(--text-muted);
+    margin-bottom: 7px;
+  }
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--accent), #8a9bff);
+    border-radius: 99px;
+    transition: width .35s ease;
+  }
+
+  form {
+    display: flex;
+    gap: 10px;
+    padding: 0 26px 20px;
+  }
+  input[type="text"] {
+    flex: 1;
+    padding: 13px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: .95rem;
+    background: transparent;
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type="text"]::placeholder { color: var(--text-muted); }
+  input[type="text"]:focus { border-color: var(--accent); }
+  form button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0 20px;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s, transform .1s;
+  }
+  form button:hover { filter: brightness(1.1); }
+  form button:active { transform: scale(.97); }
+
+  .filters {
+    display: flex;
+    gap: 6px;
+    padding: 0 26px 14px;
+  }
+  .filters button {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: .8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .filters button.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  ul { list-style: none; padding: 0 26px; min-height: 60px; }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    animation: slideIn .22s ease;
+    transition: background .15s;
+  }
+  li:hover { background: var(--accent-soft); }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .check {
+    appearance: none;
+    width: 22px; height: 22px;
+    min-width: 22px;
+    border: 2px solid var(--border);
+    border-radius: 7px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all .15s;
+  }
+  .check:hover { border-color: var(--accent); }
+  .check:checked {
+    background: var(--done);
+    border-color: var(--done);
+  }
+  .check:checked::after {
+    content: "✓";
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .label {
+    flex: 1;
+    font-size: .95rem;
+    word-break: break-word;
+    transition: color .2s;
+  }
+  li.done .label {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+  .del {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.15rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    opacity: .55;
+    transition: all .15s;
+  }
+  li:hover .del { opacity: 1; }
+  .del:hover { color: var(--danger); background: rgba(239, 68, 68, .1); }
+
+  .empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 26px 0;
+    font-size: .9rem;
+  }
+  .empty .big { font-size: 2rem; margin-bottom: 8px; }
+
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 26px;
+    margin-top: auto;
+    font-size: .8rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+  }
+  footer button {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: .8rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all .15s;
+  }
+  footer button:hover { color: var(--danger); background: rgba(239, 68, 68, .08); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Taskdo</h1>
+      <div class="date" id="today"></div>
+    </div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">🌙</button>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="metaText">0 of 0 done</span>
+      <span id="pctText">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <form id="addForm">
+    <input type="text" id="input" placeholder="What needs to be done?" maxlength="200" autocomplete="off" />
+    <button type="submit">Add</button>
+  </form>
+
+  <div class="filters" id="filters">
+    <button data-f="all" class="active">All</button>
+    <button data-f="active">Active</button>
+    <button data-f="done">Done</button>
+  </div>
+
+  <ul id="list"></ul>
+
+  <footer>
+    <span id="count">0 items left</span>
+    <button id="clearDone">Clear completed</button>
+  </footer>
+</div>
+
+<script>
+const STORAGE_KEY = "taskdo.todos.v1";
+const THEME_KEY = "taskdo.theme";
+
+let todos = load();
+let filter = "all";
+
+const $ = (id) => document.getElementById(id);
+const list = $("list"), input = $("input");
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos)); }
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function render() {
+  const shown = todos.filter(t =>
+    filter === "all" ? true : filter === "active" ? !t.done : t.done);
+
+  list.innerHTML = "";
+  if (shown.length === 0) {
+    const d = document.createElement("div");
+    d.className = "empty";
+    d.innerHTML = shown.length === 0 && todos.length === 0
+      ? '<div class="big">📝</div>No tasks yet. Add one above!'
+      : '<div class="big">🎉</div>Nothing in this view.';
+    list.appendChild(d);
+  }
+
+  shown.forEach(t => {
+    const li = document.createElement("li");
+    if (t.done) li.classList.add("done");
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.className = "check"; cb.checked = t.done;
+    cb.addEventListener("change", () => { t.done = cb.checked; save(); render(); });
+
+    const span = document.createElement("span");
+    span.className = "label"; span.textContent = t.text;
+
+    const del = document.createElement("button");
+    del.className = "del"; del.textContent = "✕"; del.title = "Delete";
+    del.addEventListener("click", () => {
+      todos = todos.filter(x => x.id !== t.id);
+      save(); render();
+    });
+
+    li.append(cb, span, del);
+    list.appendChild(li);
+  });
+
+  updateStats();
+}
+
+function updateStats() {
+  const total = todos.length;
+  const done = todos.filter(t => t.done).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  $("progressFill").style.width = pct + "%";
+  $("pctText").textContent = pct + "%";
+  $("metaText").textContent = `${done} of ${total} done`;
+  $("count").textContent = `${total - done} item${total - done === 1 ? "" : "s"} left`;
+  $("clearDone").style.visibility = done ? "visible" : "hidden";
+}
+
+$("addForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = input.value.trim();
+  if (!text) return;
+  todos.push({ id: uid(), text, done: false });
+  input.value = "";
+  input.focus();
+  save(); render();
+});
+
+$("filters").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-f]");
+  if (!btn) return;
+  filter = btn.dataset.f;
+  document.querySelectorAll(".filters button").forEach(b => b.classList.toggle("active", b === btn));
+  render();
+});
+
+$("clearDone").addEventListener("click", () => {
+  todos = todos.filter(t => !t.done);
+  save(); render();
+});
+
+// theme
+const themeBtn = $("themeToggle");
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  themeBtn.textContent = t === "dark" ? "☀️" : "🌙";
+  localStorage.setItem(THEME_KEY, t);
+}
+applyTheme(localStorage.getItem(THEME_KEY) || "light");
+themeBtn.addEventListener("click", () =>
+  applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"));
+
+// date
+$("today").textContent = new Date().toLocaleDateString("en-US", {
+  weekday: "long", month: "long", day: "numeric"
+});
+
+render();
+</script>
+</body>
+</html>
